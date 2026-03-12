@@ -48,7 +48,7 @@ df_filtrado = df_base[
 
 # --- TÍTULO ---
 st.title("🎯 Gestão de Resultados: Quem não bateu a meta?")
-st.markdown("Passe o mouse sobre os gráficos para ver detalhes de cada promotor ou unidade.")
+st.markdown("Passe o mouse sobre os gráficos para ver detalhes. A coluna **Nº** indica a quantidade total no filtro atual.")
 
 # --- ABAS ---
 tab_agora, tab_acumulado = st.tabs(["📌 Situação Mensal", "⚠️ Histórico e Recorrência"])
@@ -77,9 +77,15 @@ with tab_agora:
         st.plotly_chart(fig_h, use_container_width=True)
 
         st.subheader(f"Lista de Chamada - {mes_foco}")
+        
+        # --- LÓGICA DA RÉGUA DO EXCEL (Nº FIXO APÓS FILTRO) ---
+        df_m = df_m.sort_values('Faltou Entrega', ascending=False).reset_index(drop=True)
+        df_m.insert(0, 'Nº', df_m.index + 1)
+
         st.dataframe(
-            df_m[['nome_promotor', 'hub', 'senioridade', 'tempo_empresa_meses', 'meta_news', 'news_realizados', 'Faltou Entrega', '% Atingido']].sort_values('Faltou Entrega', ascending=False),
+            df_m[['Nº', 'nome_promotor', 'hub', 'senioridade', 'tempo_empresa_meses', 'meta_news', 'news_realizados', 'Faltou Entrega', '% Atingido']],
             column_config={
+                "Nº": st.column_config.NumberColumn("Nº", width="small"),
                 "nome_promotor": "Nome", "hub": "Unidade", "senioridade": "Nível",
                 "tempo_empresa_meses": "Meses Casa", "meta_news": "Meta",
                 "news_realizados": "Fez", "Faltou Entrega": "Faltou",
@@ -113,7 +119,6 @@ with tab_acumulado:
         elif "Atenção" in alerta: df_rec = df_rec[df_rec['Meses sem bater Meta'] == 2]
 
     with f2:
-        # Gráfico de Barras Horizontal dos Top 10 Piores com HOVER completo
         df_top10 = df_rec.sort_values('Dívida Acumulada', ascending=False).head(10)
         fig_top = px.bar(df_top10, x='Dívida Acumulada', y='Nome', orientation='h',
                          color='Meses sem bater Meta',
@@ -123,9 +128,15 @@ with tab_acumulado:
         st.plotly_chart(fig_top, use_container_width=True)
 
     st.subheader("Relatório de Reincidência (Ranking Prioritário)")
+    
+    # --- LÓGICA DA RÉGUA DO EXCEL (Nº FIXO APÓS FILTRO) ---
+    df_rec = df_rec.sort_values(['Meses sem bater Meta', 'Dívida Acumulada'], ascending=False).reset_index(drop=True)
+    df_rec.insert(0, 'Nº', df_rec.index + 1)
+
     st.dataframe(
-        df_rec.sort_values(['Meses sem bater Meta', 'Dívida Acumulada'], ascending=False),
+        df_rec,
         column_config={
+            "Nº": st.column_config.NumberColumn("Nº", width="small"),
             "Meses sem bater Meta": st.column_config.NumberColumn("Meses de Falha", format="%d ⚠️"),
             "Dívida Acumulada": "Total que Faltou",
             "Tempo Casa": "Meses na Empresa"
@@ -133,4 +144,4 @@ with tab_acumulado:
         hide_index=True, use_container_width=True
     )
 
-st.info("💡 **Dica de Gestão:** Ao passar o mouse no gráfico de barras, você descobre a Unidade e o Tempo de Casa do promotor sem precisar procurar na tabela.")
+st.info("💡 **Dica:** O número na coluna **Nº** é a contagem real de linhas filtradas. Se a última linha for 50, você tem 50 pessoas na lista.")
